@@ -1,23 +1,33 @@
 class OAuthController < ApplicationController
   def authorize
-    redirect_uri = oauth_callback_url
-    auth_url = YoutubeService.authorization_url(redirect_uri)
-    redirect_to auth_url, allow_other_host: true
+    begin
+      redirect_uri = oauth_callback_url(host: request.base_url)
+      auth_url = YoutubeService.authorization_url(redirect_uri)
+      redirect_to auth_url, allow_other_host: true
+    rescue => e
+      Rails.logger.error "OAuth Authorization Error: #{e.message}"
+      redirect_to root_path, alert: "Failed to connect to YouTube. Please check your API credentials in .env file."
+    end
   end
 
   def callback
-    if params[:code]
-      redirect_uri = oauth_callback_url
-      credentials = YoutubeService.get_access_token(params[:code], redirect_uri)
+    begin
+      if params[:code]
+        redirect_uri = oauth_callback_url(host: request.base_url)
+        credentials = YoutubeService.get_access_token(params[:code], redirect_uri)
 
-      if credentials
-        session[:youtube_authorized] = true
-        redirect_to root_path, notice: 'Successfully connected to YouTube!'
+        if credentials
+          session[:youtube_authorized] = true
+          redirect_to root_path, notice: 'Successfully connected to YouTube!'
+        else
+          redirect_to root_path, alert: 'Failed to connect to YouTube.'
+        end
       else
-        redirect_to root_path, alert: 'Failed to connect to YouTube.'
+        redirect_to root_path, alert: 'Authorization cancelled.'
       end
-    else
-      redirect_to root_path, alert: 'Authorization cancelled.'
+    rescue => e
+      Rails.logger.error "OAuth Callback Error: #{e.message}"
+      redirect_to root_path, alert: "Failed to complete YouTube authorization: #{e.message}"
     end
   end
 

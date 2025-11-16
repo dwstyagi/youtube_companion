@@ -1,0 +1,44 @@
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6">
+    <%= link_to root_path, class: "text-gray-600 hover:text-gray-900 flex items-center space-x-2" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      <span>Back to Videos</span>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-lg p-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">Add YouTube Video</h1>
+
+    <%= form_with scope: :video, url: videos_path, class: "space-y-6" do |f| %>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          YouTube URL or Video ID
+        </label>
+        <%= f.text_field :youtube_url,
+            placeholder: "https://www.youtube.com/watch?v=...",
+            class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent",
+            required: true %>
+        <p class="mt-2 text-sm text-gray-500">
+          Enter a YouTube video URL or just the video ID
+        </p>
+      </div>
+
+      <div class="flex space-x-4">
+        <%= f.submit "Add Video", class: "bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium cursor-pointer" %>
+        <%= link_to "Cancel", root_path, class: "bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium" %>
+      </div>
+    <% end %>
+
+    <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <h3 class="font-semibold text-blue-900 mb-2">Supported URL formats:</h3>
+      <ul class="text-sm text-blue-800 space-y-1">
+        <li>• https://www.youtube.com/watch?v=VIDEO_ID</li>
+        <li>• https://youtu.be/VIDEO_ID</li>
+        <li>• https://www.youtube.com/embed/VIDEO_ID</li>
+        <li>• VIDEO_ID</li>
+      </ul>
+    </div>
+  </div>
+</div>
