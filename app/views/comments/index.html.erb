@@ -1,4 +1,121 @@
-<div>
-  <h1 class="font-bold text-4xl">Comments#index</h1>
-  <p>Find me in app/views/comments/index.html.erb</p>
+<div class="max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to video_path(@video), class: "text-gray-600 hover:text-gray-900 flex items-center space-x-2" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      <span>Back to Video</span>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Comments</h1>
+    <p class="text-gray-600"><%= @video.title %></p>
+  </div>
+
+  <!-- Post New Comment -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Post a Comment</h2>
+
+    <%= form_with scope: :comment, url: video_comments_path(@video), class: "space-y-4" do |f| %>
+      <%= f.text_area :text,
+          placeholder: "Write your comment...",
+          rows: 3,
+          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+          required: true %>
+
+      <%= f.submit "Post Comment", class: "bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium cursor-pointer" %>
+    <% end %>
+  </div>
+
+  <!-- Comments List -->
+  <div class="space-y-4">
+    <h2 class="text-lg font-semibold text-gray-900">
+      <%= pluralize(@comments.count, 'comment') %>
+    </h2>
+
+    <% if @comments.any? %>
+      <% @comments.each do |comment| %>
+        <div class="bg-white rounded-lg shadow p-6">
+          <!-- Comment Header -->
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900"><%= comment[:author] %></h3>
+              <p class="text-sm text-gray-500"><%= time_ago_in_words(comment[:published_at]) %> ago</p>
+            </div>
+
+            <button
+              onclick="toggleReplyForm('<%= comment[:id] %>')"
+              class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              Reply
+            </button>
+          </div>
+
+          <!-- Comment Text -->
+          <p class="text-gray-800 mb-3"><%= comment[:text] %></p>
+
+          <!-- Comment Stats -->
+          <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+            <span class="flex items-center space-x-1">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/>
+              </svg>
+              <span><%= comment[:like_count] %></span>
+            </span>
+
+            <% if comment[:reply_count] > 0 %>
+              <span class="text-gray-500"><%= pluralize(comment[:reply_count], 'reply') %></span>
+            <% end %>
+          </div>
+
+          <!-- Reply Form (Hidden by Default) -->
+          <div id="reply-form-<%= comment[:id] %>" class="hidden mt-4 pt-4 border-t">
+            <%= form_with scope: :comment, url: reply_video_comments_path(@video), method: :post, class: "space-y-3" do |f| %>
+              <%= hidden_field_tag :parent_comment_id, comment[:id] %>
+
+              <%= f.text_area :text,
+                  placeholder: "Write your reply...",
+                  rows: 2,
+                  class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                  required: true %>
+
+              <div class="flex space-x-2">
+                <%= f.submit "Post Reply", class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer" %>
+                <button
+                  type="button"
+                  onclick="toggleReplyForm('<%= comment[:id] %>')"
+                  class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">
+                  Cancel
+                </button>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Delete Comment (if it's your comment) -->
+          <div class="mt-3 pt-3 border-t">
+            <%= form_with url: video_comment_path(@video, comment_id: comment[:id]), method: :delete, data: { turbo_confirm: "Delete this comment?" } do %>
+              <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                Delete Comment
+              </button>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="bg-gray-50 rounded-lg p-12 text-center">
+        <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <p class="text-gray-600">No comments yet. Be the first to comment!</p>
+      </div>
+    <% end %>
+  </div>
 </div>
+
+<script>
+function toggleReplyForm(commentId) {
+  const form = document.getElementById(`reply-form-${commentId}`);
+  form.classList.toggle('hidden');
+}
+</script>

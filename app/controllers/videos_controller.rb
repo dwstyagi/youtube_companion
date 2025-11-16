@@ -77,15 +77,20 @@ class VideosController < ApplicationController
       return
     end
 
-    @video = Video.find(params[:id])
-    video_data = youtube_service.fetch_video_details(@video.youtube_video_id)
+    begin
+      @video = Video.find(params[:id])
+      video_data = youtube_service.fetch_video_details(@video.youtube_video_id)
 
-    if video_data && @video.update(video_data)
-      # Log event
-      EventLog.log_event('video_synced', { video_id: @video.id }, request)
-      redirect_to video_path(@video), notice: 'Video details synced successfully!'
-    else
-      redirect_to video_path(@video), alert: 'Failed to sync video details'
+      if video_data && @video.update(video_data)
+        # Log event
+        EventLog.log_event('video_synced', { video_id: @video.id }, request)
+        redirect_to video_path(@video), notice: 'Video details synced successfully!'
+      else
+        redirect_to video_path(@video), alert: 'Failed to sync video details'
+      end
+    rescue => e
+      Rails.logger.error "Sync Error: #{e.message}"
+      redirect_to video_path(@video), alert: "Failed to sync video: #{e.message}"
     end
   end
 
@@ -95,26 +100,31 @@ class VideosController < ApplicationController
       return
     end
 
-    title = params[:video][:title]
-    description = params[:video][:description]
+    begin
+      title = params[:video][:title]
+      description = params[:video][:description]
 
-    # Update on YouTube
-    result = youtube_service.update_video(
-      @video.youtube_video_id,
-      title: title,
-      description: description
-    )
+      # Update on YouTube
+      result = youtube_service.update_video(
+        @video.youtube_video_id,
+        title: title,
+        description: description
+      )
 
-    if result[:success]
-      # Update local database
-      @video.update(title: title, description: description)
+      if result[:success]
+        # Update local database
+        @video.update(title: title, description: description)
 
-      # Log event
-      EventLog.log_event('video_updated', { video_id: @video.id, title: title }, request)
+        # Log event
+        EventLog.log_event('video_updated', { video_id: @video.id, title: title }, request)
 
-      redirect_to video_path(@video), notice: 'Video updated successfully on YouTube!'
-    else
-      redirect_to video_path(@video), alert: "Failed to update video: #{result[:error]}"
+        redirect_to video_path(@video), notice: 'Video updated successfully on YouTube!'
+      else
+        redirect_to video_path(@video), alert: "Failed to update video: #{result[:error]}"
+      end
+    rescue => e
+      Rails.logger.error "Update Error: #{e.message}"
+      redirect_to video_path(@video), alert: "Failed to update video: #{e.message}"
     end
   end
 

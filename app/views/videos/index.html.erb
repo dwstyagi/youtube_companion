@@ -1,4 +1,106 @@
-<div>
-  <h1 class="font-bold text-4xl">Videos#index</h1>
-  <p>Find me in app/views/videos/index.html.erb</p>
+<div class="max-w-7xl mx-auto">
+  <!-- Connection Status Banner -->
+  <% if @youtube_authorized %>
+    <div class="bg-green-50 border-l-4 border-green-400 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <span class="flex items-center space-x-2 text-green-700">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+          <span class="font-semibold">Connected to YouTube</span>
+        </span>
+        <span class="ml-3 text-green-600">—</span>
+        <span class="ml-3 text-green-700">You can now edit videos, manage comments, and sync statistics.</span>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <p class="text-blue-800 font-medium">Not Connected to YouTube</p>
+            <p class="text-blue-700 text-sm">Connect to unlock video editing, comment management, and more features.</p>
+          </div>
+        </div>
+        <%= link_to oauth_authorize_path, class: "flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-colors" do %>
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z"/>
+          </svg>
+          <span>Connect Now</span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-4xl font-bold text-gray-900">Your Videos</h1>
+    <%= link_to new_video_path, class: "bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>Add Video</span>
+    <% end %>
+  </div>
+
+  <% if @videos.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @videos.each do |video| %>
+        <%= link_to video_path(video), class: "block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300" do %>
+          <div class="relative pb-[56.25%] bg-gray-200 rounded-t-lg overflow-hidden">
+            <% if video.thumbnail_url.present? %>
+              <%= image_tag video.thumbnail_url, alt: video.title, class: "absolute inset-0 w-full h-full object-cover" %>
+            <% else %>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+                </svg>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-gray-900 line-clamp-2 mb-2">
+              <%= video.title %>
+            </h3>
+
+            <div class="flex items-center justify-between text-sm text-gray-600">
+              <div class="flex items-center space-x-4">
+                <span class="flex items-center space-x-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  <span><%= number_to_human(video.view_count) %></span>
+                </span>
+
+                <span class="flex items-center space-x-1">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/>
+                  </svg>
+                  <span><%= number_to_human(video.like_count) %></span>
+                </span>
+              </div>
+
+              <span class="text-xs text-gray-500">
+                <%= time_ago_in_words(video.created_at) %> ago
+              </span>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+      <svg class="w-24 h-24 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">No videos yet</h3>
+      <p class="text-gray-600 mb-6">Add your first YouTube video to get started!</p>
+      <%= link_to "Add Video", new_video_path, class: "inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium" %>
+    </div>
+  <% end %>
 </div>

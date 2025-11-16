@@ -146,50 +146,87 @@ class YoutubeService
 
   # OAuth methods
   def self.authorization_url(redirect_uri)
-    client_id = Google::Auth::ClientId.new(
-      ENV['YOUTUBE_CLIENT_ID'],
-      ENV['YOUTUBE_CLIENT_SECRET']
+    require 'signet/oauth_2/client'
+
+    client = Signet::OAuth2::Client.new(
+      client_id: ENV['YOUTUBE_CLIENT_ID'],
+      client_secret: ENV['YOUTUBE_CLIENT_SECRET'],
+      authorization_uri: 'https://accounts.google.com/o/oauth2/auth',
+      redirect_uri: redirect_uri,
+      scope: SCOPE
     )
 
-    token_store = Google::Auth::Stores::FileTokenStore.new(
-      file: Rails.root.join('tmp', 'tokens.yaml')
-    )
-
-    authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
-    authorizer.get_authorization_url(redirect_uri: redirect_uri)
+    client.authorization_uri.to_s
   end
 
   def self.get_access_token(code, redirect_uri)
-    client_id = Google::Auth::ClientId.new(
-      ENV['YOUTUBE_CLIENT_ID'],
-      ENV['YOUTUBE_CLIENT_SECRET']
+    require 'signet/oauth_2/client'
+
+    client = Signet::OAuth2::Client.new(
+      client_id: ENV['YOUTUBE_CLIENT_ID'],
+      client_secret: ENV['YOUTUBE_CLIENT_SECRET'],
+      token_credential_uri: 'https://oauth2.googleapis.com/token',
+      redirect_uri: redirect_uri,
+      code: code
     )
 
-    token_store = Google::Auth::Stores::FileTokenStore.new(
-      file: Rails.root.join('tmp', 'tokens.yaml')
-    )
+    client.fetch_access_token!
 
-    authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
-    credentials = authorizer.get_and_store_credentials_from_code(
-      user_id: 'default',
-      code: code,
-      base_url: redirect_uri
-    )
+    # Store credentials
+    store_credentials(client)
 
-    credentials
+    client
   end
 
   def self.get_stored_credentials
-    client_id = Google::Auth::ClientId.new(
-      ENV['YOUTUBE_CLIENT_ID'],
-      ENV['YOUTUBE_CLIENT_SECRET']
+    token_file = Rails.root.join('tmp', 'tokens.yaml')
+    return nil unless File.exist?(token_file)
+
+    require 'yaml'
+    require 'signet/oauth_2/client'
+
+    stored_data = YAML.safe_load(File.read(token_file), permitted_classes: [Symbol, Time])
+    return nil unless stored_data
+
+    # Convert timestamp back to Time if needed
+    expires_at = stored_data['expires_at']
+    expires_at = Time.at(expires_at) if expires_at.is_a?(Integer)
+
+    client = Signet::OAuth2::Client.new(
+      client_id: ENV['YOUTUBE_CLIENT_ID'],
+      client_secret: ENV['YOUTUBE_CLIENT_SECRET'],
+      token_credential_uri: 'https://oauth2.googleapis.com/token',
+      access_token: stored_data['access_token'],
+      refresh_token: stored_data['refresh_token'],
+      expires_at: expires_at
     )
 
-    token_store = Google::Auth::Stores::FileTokenStore.new(
-      file: Rails.root.join('tmp', 'tokens.yaml')
-    )
+    # Refresh token if expired
+    if client.expired?
+      client.refresh!
+      store_credentials(client)
+    end
 
-    authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
-    authorizer.get_credentials('default')
+    client
+  rescue => e
+    Rails.logger.error "Failed to load credentials: #{e.message}"
+    nil
+  end
+
+  def self.store_credentials(client)
+    token_file = Rails.root.join('tmp', 'tokens.yaml')
+
+    # Convert Time to integer timestamp for safe YAML storage
+    expires_at = client.expires_at
+    expires_at = expires_at.to_i if expires_at.is_a?(Time)
+
+    data = {
+      'access_token' => client.access_token,
+      'refresh_token' => client.refresh_token,
+      'expires_at' => expires_at
+    }
+
+    require 'yaml'
+    File.write(token_file, data.to_yaml)
   end
 end
