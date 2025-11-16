@@ -49,3 +49,6 @@ yarn-debug.log*
 
 # Ignore database.yml if it contains sensitive data (optional)
 # /config/database.yml
+
+# Ignore OAuth tokens
+/tmp/tokens.yaml
